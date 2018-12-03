@@ -1,0 +1,78 @@
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  labels:
+    app: mssql
+  name: mssql
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    app: mssql
+    deploymentconfig: mssql
+  strategy:
+    activeDeadlineSeconds: 21600
+    resources: {}
+    rollingParams:
+      intervalSeconds: 1
+      maxSurge: 25%
+      maxUnavailable: 25%
+      timeoutSeconds: 600
+      updatePeriodSeconds: 1
+    type: Rolling
+  template:
+    metadata:
+      labels:
+        app: mssql
+        deploymentconfig: mssql
+    spec:
+      initContainers:
+      - name: mssql-init-setup
+        image: mssql-init:latest
+        command: [ "/scripts/setup.sh" ]
+        imagePullPolicy: Always
+        resources: {}
+        env:
+        - name: ACCEPT_EULA
+          value: 'Y'
+        - name: SA_PASSWORD
+          value: 't6UVfLcBAc9NxPtQ'
+        volumeMounts:
+        - mountPath: /var/opt/mssql
+          name: mssql-data
+      containers:
+      - name: mssql
+        image: microsoft/mssql-server-linux:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 1433
+          protocol: TCP
+        resources: {}
+        env:
+        - name: ACCEPT_EULA
+          value: 'Y'
+        - name: SA_PASSWORD
+          value: 'yQwgqP/Ubkly95dgthZD/z8N1GQ'
+        volumeMounts:
+        - mountPath: /var/opt/mssql
+          name: mssql-data
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: mssql-data
+        emptyDir: {}
+  test: false
+  triggers:
+  - type: ConfigChange
+  - imageChangeParams:
+      automatic: true
+      containerNames:
+      - mssql-init-setup
+      - mssql-init-restore
+      from:
+        kind: ImageStreamTag
+        name: mssql-init:latest
+    type: ImageChange

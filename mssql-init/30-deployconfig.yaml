@@ -1,0 +1,63 @@
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  labels:
+    app: mssql-init
+  name: mssql-init
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    app: mssql-init
+    deploymentconfig: mssql-init
+  strategy:
+    activeDeadlineSeconds: 21600
+    resources: {}
+    rollingParams:
+      intervalSeconds: 1
+      maxSurge: 25%
+      maxUnavailable: 25%
+      timeoutSeconds: 600
+      updatePeriodSeconds: 1
+    type: Rolling
+  template:
+    metadata:
+      labels:
+        app: mssql-init
+        deploymentconfig: mssql-init
+    spec:
+      containers:
+      - name: mssql-init
+        image: mssql-init:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 1433
+          protocol: TCP
+        resources: {}
+        env:
+        - name: ACCEPT_EULA
+          value: 'Y'
+        - name: SA_PASSWORD
+          value: 't6UVfLcBAc9NxPtQ'
+        volumeMounts:
+        - mountPath: /var/opt/mssql
+          name: mssql-data
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: mssql-data
+        emptyDir: {}
+  test: false
+  triggers:
+  - type: ConfigChange
+  - imageChangeParams:
+      automatic: true
+      containerNames:
+      - mssql-init
+      from:
+        kind: ImageStreamTag
+        name: mssql-init:latest
+    type: ImageChange
