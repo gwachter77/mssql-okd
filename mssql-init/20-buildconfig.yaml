@@ -16,7 +16,7 @@ spec:
   runPolicy: Serial
   source:
     git:
-      ref: development
+      ref: master
       uri: https://github.com/gwachter77/mssql-okd.git
     type: Git
   strategy:
